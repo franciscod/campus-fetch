@@ -1,7 +1,10 @@
 import hashlib
 import os
+import random
 import shutil
+import string
 import sys
+
 from pathlib import Path
 
 from html2text import HTML2Text
@@ -26,6 +29,7 @@ class MoodleDL:
     def __init__(self, base_url='https://campus.exactas.uba.ar/'):
         self._session = HTMLSession()
         self._base_url = base_url
+        self._processed_urls = set()
 
     def head(self, url, *args, **kwargs):
         if not url.startswith('http'):
@@ -67,7 +71,7 @@ class MoodleDL:
                 return False
 
         if not Path(filename).exists():
-            print('File not previously downloaded', filename, url)
+            # print('File not previously downloaded', filename, url)
             return False
 
         sha1 = hashlib.sha1()
@@ -86,13 +90,29 @@ class MoodleDL:
 
         return True
 
-    def download_file(self, url, filename):
-        old_filename = os.path.join(OLD_BASE_DIR, filename)
-        if self.etag_sha1_matches(url, old_filename):
-            os.rename(old_filename, filename)
-            return
+    def download_file(self, url, name, basedir):
+        if name is not None:
+            filename = self.path(name, 'files_' + basedir)
+            old_filename = os.path.join(OLD_BASE_DIR, filename)
+            if self.etag_sha1_matches(url, old_filename):
+                os.rename(old_filename, filename)
+                return
 
-        data = self.get(url).content
+        res = self.get(url)
+        data = res.content
+
+        if name is None:
+            content_disp = res.headers.get('Content-Disposition')
+            if content_disp:
+                if content_disp.startswith("attachment; filename="):
+                    cdname = content_disp[21:]
+                    if cdname[0] == cdname[-1] == '"':
+                        cdname = cdname[1:-1]
+                    name = cdname
+            if name is None:
+                name = ''.join(random.sample(string.ascii, 8))
+            filename = self.path(name, 'files_' + basedir)
+
         with open(filename, 'wb') as f:
             f.write(data)
 
@@ -123,10 +143,6 @@ class MoodleDL:
         topics = res.html.find('ul.topics > li.section')
         if len(topics) == 1:
             self.fetch_section_tab(res)
-            for a in res.html.find('.nav-tabs li a'):
-                href = a.attrs.get('href')
-                if href:
-                    self.fetch_section_tab(self._session.get(href))
         else:
             for topic in topics:
                 self.fetch_section_li(res, topic)
@@ -154,6 +170,15 @@ class MoodleDL:
         self.fetch_section(res, title, content)
 
     def fetch_section_tab(self, res):
+        if res.url in self._processed_urls:
+            return
+        self._processed_urls.add(res.url)
+
+        for a in res.html.find('.nav-tabs li a'):
+            href = a.attrs.get('href')
+            if href:
+                self.fetch_section_tab(self._session.get(href))
+
         if res.html.find('.errormessage'):
             return
         title = res.html.find('.active span', first=True).text
@@ -203,15 +228,15 @@ class MoodleDL:
                 dl_name = href.split('/')[-1]
                 return dl_url, dl_name
 
-            print("Unhandled resource page:", url)
-            return None, None
+            # try raw download
+            return url, None
 
         dl_url, dl_name = resource_url_name()
 
         if not dl_url:
             return
 
-        self.download_file(dl_url, self.path(dl_name, 'files_' + basedir))
+        self.download_file(dl_url, dl_name, basedir)
 
 
 if __name__ == '__main__':

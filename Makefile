@@ -7,4 +7,7 @@ venv/done: requirements.txt
 	venv/bin/pip install -r requirements.txt
 	touch venv/done
 
+clean:
+	rm -rf downloads
+
 .PHONY: download
