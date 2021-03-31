@@ -181,7 +181,7 @@ class MoodleDL:
 
         if res.html.find('.errormessage'):
             return
-        title = res.html.find('.active span', first=True).text
+        title = res.html.find('.breadcrumb li:last-child span a span', first=True).text
         content = res.html.find('#region-main .content', first=True)
         self.fetch_section(res, title, content)
 
