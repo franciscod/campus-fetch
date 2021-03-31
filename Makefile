@@ -1,5 +1,6 @@
 download: venv/done
 	venv/bin/python3 dl.py
+	cd downloads; git add .; git commit -m "le"
 
 venv/done: requirements.txt
 	virtualenv -p python3 venv
