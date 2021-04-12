@@ -10,6 +10,8 @@ from pathlib import Path
 from html2text import HTML2Text
 from requests_html import HTMLSession
 
+from youtube_dl import YoutubeDL
+
 from config import MATERIAS
 
 try:
@@ -131,6 +133,7 @@ class MoodleDL:
         })
 
     def fetch_course(self, course_name, course_id):
+        self._course_id = course_id
         self._course_name = course_name
         self.rename_old()
 
@@ -141,12 +144,14 @@ class MoodleDL:
         if 'policy' in res.url:
             res = self.agree_policy(res)
 
+        self.parse_course(res)
+
+    def parse_course(self, res):
         topics = res.html.find('ul.topics > li.section')
         if len(topics) == 1:
-            self.fetch_section_tab(res)
+            self.recurse_in_tabs(res)
         else:
-            for topic in topics:
-                self.fetch_section_li(res, topic)
+            raise NotImplementedError
 
     def base_path(self):
         return (Path(DOWNLOADS_DIR) / slugify(self._course_name)).resolve()
@@ -165,46 +170,94 @@ class MoodleDL:
             os.makedirs(old_path, exist_ok=True)
             os.rename(path, old_path)
 
-    def fetch_section_li(self, res, topic):
-        title = topic.find('.content .sectionname', first=True).text
-        content = topic.find('.content .summary', first=True)
-        self.fetch_section(res, title, content)
-
-    def fetch_section_tab(self, res):
+    def recurse_in_tabs(self, res):
         if res.url in self._processed_urls:
             return
         self._processed_urls.add(res.url)
 
         for a in res.html.find('.nav-tabs li a'):
             href = a.attrs.get('href')
-            if href:
-                self.fetch_section_tab(self._session.get(href))
+            if href and href not in self._processed_urls:
+                self._processed_urls.add(res.url)
+                newres = self._session.get(href)
+                self.recurse_in_tabs(newres)
 
         if res.html.find('.errormessage'):
             return
-        title = res.html.find('.breadcrumb li:last-child span a span', first=True).text
-        content = res.html.find('#region-main .content', first=True)
-        self.fetch_section(res, title, content)
+        self.parse_section(res)
 
-    def fetch_section(self, res, title, content):
+    def parse_content(self, res, title):
+        content = res.html.find('#region-main .content', first=True)
+        if content is None:
+            content = res.html.find('#region-main [role="main"]', first=True)
+
         h = HTML2Text(baseurl='')
         h.ul_item_mark = '-'
         md_content = h.handle(content.html)
+
         if md_content.strip() != '':
             with open(self.path(slugify(title) + '.md'), 'w') as f:
                 f.write('# ' + title + '\n([fuente](' + res.url + '))\n---\n')
                 f.write(md_content)
+
+        return content
+
+
+    def parse_section(self, res):
+        title = res.html.find('.breadcrumb li:last-child span a span', first=True).text
+        content = self.parse_content(res, title)
 
         for a in content.find('a'):
             href = a.attrs.get('href')
             if not href:
                 continue
 
+            section_prefix = "https://campus.exactas.uba.ar/course/view.php?id={}&section=".format(self._course_id)
+
             if '/mod/resource' in href:
                 self.fetch_resource(href, slugify(title))
+            elif '/mod/forum' in href:
+                pass  # ignoring forum
+            elif '/mod/url' in href:
+                self.fetch_shortened_url(href, slugify(title))
+            elif '/mod/page' in href:
+                self.fetch_page_resource(href)
+            elif href.startswith(section_prefix):
+                self.fetch_section(href)
+            else:
+                print("unhandled resource", href, title, file=sys.stderr)
+
+
+    def fetch_page_resource(self, url):
+        if url in self._processed_urls:
+            return
+
+        self._processed_urls.add(url)
+
+        res = self.get(url)
+        self.parse_page_resource(res)
+
+
+    def parse_page_resource(self, res):
+        title = res.html.find('.breadcrumb li:last-child span a span', first=True).text
+        content = self.parse_content(res, title)
+
+    def fetch_section(self, url):
+        """Fetches a section from an URL that should look like
+           /course/view.php?id={}&section={}, and then calls parse_section.
+        """
+        if url in self._processed_urls:
+            return
+
+        self._processed_urls.add(url)
+
+        res = self.get(url)
+
+        self.parse_section(res)
 
     def fetch_resource(self, url, basedir):
         res = self.get(url)
+
 
         def resource_url_name():
             content_disp = res.headers.get('Content-Disposition')
@@ -238,6 +291,32 @@ class MoodleDL:
             return
 
         self.download_file(dl_url, dl_name, basedir)
+
+    def fetch_shortened_url(self, url, section):
+        """Fetches an url that's behind a "shortened" URL, that looks like
+           /mod/url/view.php?id={} and then dispatches parsing.
+        """
+        if url in self._processed_urls:
+            return
+
+        url_id = int(url.split('/mod/url/view.php?id=')[-1])
+
+        self._processed_urls.add(url)
+
+        res = self.get(url)
+
+        dest = res.url
+
+        workaround = res.html.find('.urlworkaround', first=True)
+        if workaround:
+            dest = workaround.find("a", first=True).attrs['href']
+
+        if "youtube.com/watch" in dest or "youtube.com/playlist" in dest:
+            with YoutubeDL() as ydl:
+                # TODO: use subdirectories for sections and link downloaded videos there
+                ydl.download([dest])
+            return
+        # print(section, "shortened", url_id, "maps to", dest)
 
 
 if __name__ == '__main__':
