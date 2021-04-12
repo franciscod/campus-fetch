@@ -110,7 +110,8 @@ class MoodleDL:
                         cdname = cdname[1:-1]
                     name = cdname
             if name is None:
-                name = ''.join(random.sample(string.ascii, 8))
+                # TODO: this should be derived from some other information instead
+                name = ''.join(random.sample(string.ascii_lowercase, 8))
             filename = self.path(name, 'files_' + basedir)
 
         with open(filename, 'wb') as f:
