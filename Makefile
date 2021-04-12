@@ -11,4 +11,7 @@ venv/done: requirements.txt
 clean:
 	rm -rf downloads
 
-.PHONY: download
+todo:
+	grep -n -R TODO *.py || true
+
+.PHONY: download clean todo
