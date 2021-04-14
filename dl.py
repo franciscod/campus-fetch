@@ -154,15 +154,15 @@ class MoodleDL:
             raise NotImplementedError
 
     def base_path(self):
-        return (Path(DOWNLOADS_DIR) / slugify(self._course_name)).resolve()
+        return Path(DOWNLOADS_DIR) / slugify(self._course_name)
 
     def path(self, filename, *dir_parts):
-        path = os.path.join(self.base_path(), *dir_parts)
+        path = os.path.join(self.base_path().resolve(), *dir_parts)
         os.makedirs(path, exist_ok=True)
         return os.path.join(path, filename)
 
     def rename_old(self):
-        path = self.base_path()
+        path = self.base_path().resolve()
         old_path = os.path.join(OLD_BASE_DIR, path)
         if os.path.isdir(path):
             if os.path.isdir(old_path):
@@ -294,7 +294,7 @@ class MoodleDL:
 
     def fetch_shortened_url(self, url, section):
         """Fetches an url that's behind a "shortened" URL, that looks like
-           /mod/url/view.php?id={} and then dispatches parsing.
+           /mod/url/view.php?id={} and then stores the destination url.
         """
         if url in self._processed_urls:
             return
@@ -311,12 +311,9 @@ class MoodleDL:
         if workaround:
             dest = workaround.find("a", first=True).attrs['href']
 
-        if "youtube.com/watch" in dest or "youtube.com/playlist" in dest:
-            with YoutubeDL() as ydl:
-                # TODO: use subdirectories for sections and link downloaded videos there
-                ydl.download([dest])
-            return
-        # print(section, "shortened", url_id, "maps to", dest)
+        path = (self.base_path() / "urls" / str(url_id))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(dest)
 
 
 if __name__ == '__main__':
