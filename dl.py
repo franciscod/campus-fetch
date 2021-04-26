@@ -219,7 +219,7 @@ class MoodleDL:
             elif '/mod/forum' in href:
                 pass  # ignoring forum
             elif '/mod/url' in href:
-                self.fetch_shortened_url(href, slugify(title))
+                self.fetch_shortened_url(href, a.text)
             elif '/mod/page' in href:
                 self.fetch_page_resource(href)
             elif href.startswith(section_prefix):
@@ -292,7 +292,7 @@ class MoodleDL:
 
         self.download_file(dl_url, dl_name, basedir)
 
-    def fetch_shortened_url(self, url, section):
+    def fetch_shortened_url(self, url, text):
         """Fetches an url that's behind a "shortened" URL, that looks like
            /mod/url/view.php?id={} and then stores the destination url.
         """
@@ -313,7 +313,9 @@ class MoodleDL:
 
         path = (self.base_path() / "urls" / str(url_id))
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(dest)
+        if text.endswith("URL"):
+            text = text[:-3]
+        path.write_text('# {}\nURL="{}"'.format(text, dest))
 
 
 if __name__ == '__main__':
