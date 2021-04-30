@@ -191,9 +191,20 @@ class MoodleDL:
         if content is None:
             content = res.html.find('#region-main [role="main"]', first=True)
 
+        extra = []
+        for iframe in content.find('iframe'):
+            src = iframe.attrs.get('src')
+            if not src:
+                continue
+            extra.append("- iframe: URL=" + src)
+
         h = HTML2Text(baseurl='')
         h.ul_item_mark = '-'
         md_content = h.handle(content.html)
+
+        if extra:
+            md_extra_content = '\n\n'.join(extra)
+            md_content += md_extra_content
 
         if md_content.strip() != '':
             with open(self.path(slugify(title) + '.md'), 'w') as f:
