@@ -10,8 +10,6 @@ from pathlib import Path
 from html2text import HTML2Text
 from requests_html import HTMLSession
 
-from youtube_dl import YoutubeDL
-
 from config import MATERIAS
 
 try:
