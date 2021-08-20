@@ -4,6 +4,7 @@ import random
 import shutil
 import string
 import sys
+import urllib.parse
 
 from pathlib import Path
 
@@ -114,6 +115,7 @@ class MoodleDL:
                 name = ''.join(random.sample(string.ascii_lowercase, 8))
             filename = self.path(name, 'files_' + basedir)
 
+        Path(filename).parent.mkdir(parents=True, exist_ok=True)
         with open(filename, 'wb') as f:
             f.write(data)
 
@@ -231,10 +233,42 @@ class MoodleDL:
                 self.fetch_shortened_url(href, a.text)
             elif '/mod/page' in href:
                 self.fetch_page_resource(href)
+            elif '/mod/folder' in href:
+                self.fetch_folder(href, slugify(title))
             elif href.startswith(section_prefix):
                 self.fetch_section(href)
             else:
                 print("unhandled resource", href, title, file=sys.stderr)
+
+        self.parse_page_fp_filename(content, slugify(title))
+
+
+    def parse_page_fp_filename(self, content, basedir):
+        for a in content.find('a'):
+            href = a.attrs.get('href')
+
+            if "mod_folder" not in href:
+                continue
+
+            dl_url = href
+            dl_name = urllib.parse.unquote(href.split('mod_folder/content/0/')[1].split('?')[0])
+
+            self.download_file(dl_url, dl_name, basedir)
+
+
+    def fetch_folder(self, url, basedir):
+        if url in self._processed_urls:
+            return
+
+        self._processed_urls.add(url)
+
+        res = self.get(url)
+        title = res.html.find('.breadcrumb li:last-child span a span', first=True).text
+        basedir += "/" + slugify(title)
+
+        content = self.parse_content(res, title)
+
+        self.parse_page_fp_filename(content, basedir)
 
 
     def fetch_page_resource(self, url):
