@@ -7,5 +7,5 @@ https://campus.exactas.uba.ar/course/view.php?id=2420
 # PASSWORD = "hunter2"
 
 MATERIAS = [
-  ("algo2", 2420),
+  ("so", 2715),
 ]
