@@ -72,7 +72,7 @@ class MoodleDL:
                 return False
 
         if not Path(filename).exists():
-            # print('File not previously downloaded', filename, url)
+            print('File not previously downloaded', filename, url)
             return False
 
         sha1 = hashlib.sha1()
@@ -92,10 +92,16 @@ class MoodleDL:
         return True
 
     def download_file(self, url, name, basedir):
+        if name is None:
+            # ???
+            pass
+
         if name is not None:
             filename = self.path(name, 'files_' + basedir)
-            old_filename = os.path.join(OLD_BASE_DIR, filename)
+            old_filename = self.old_path(name, 'files_' + basedir)
             if self.etag_sha1_matches(url, old_filename):
+                new_parent, _ = os.path.split(filename)
+                os.makedirs(new_parent, exist_ok=True)
                 os.rename(old_filename, filename)
                 return
 
@@ -156,14 +162,24 @@ class MoodleDL:
     def base_path(self):
         return Path(DOWNLOADS_DIR) / slugify(self._course_name)
 
+    def old_base_path(self):
+        path = self.base_path()
+        return (path.parent / OLD_BASE_DIR / path.name).resolve()
+
     def path(self, filename, *dir_parts):
         path = os.path.join(self.base_path().resolve(), *dir_parts)
         os.makedirs(path, exist_ok=True)
         return os.path.join(path, filename)
 
+    def old_path(self, filename, *dir_parts):
+        path = os.path.join(self.old_base_path(), *dir_parts)
+        os.makedirs(path, exist_ok=True)
+        return os.path.join(path, filename)
+
     def rename_old(self):
         path = self.base_path().resolve()
-        old_path = os.path.join(OLD_BASE_DIR, path)
+        old_path = self.old_base_path()
+
         if os.path.isdir(path):
             if os.path.isdir(old_path):
                 shutil.rmtree(old_path)
@@ -346,13 +362,17 @@ class MoodleDL:
 
         self._processed_urls.add(url)
 
-        res = self.get(url)
+        hres = self.head(url)
+        loc = hres.headers.get('Location')
+        if loc:
+            dest = loc
+        else:
+            res = self.get(url)
+            dest = res.url
 
-        dest = res.url
-
-        workaround = res.html.find('.urlworkaround', first=True)
-        if workaround:
-            dest = workaround.find("a", first=True).attrs['href']
+            workaround = res.html.find('.urlworkaround', first=True)
+            if workaround:
+                dest = workaround.find("a", first=True).attrs['href']
 
         path = (self.base_path() / "urls" / str(url_id))
         path.parent.mkdir(parents=True, exist_ok=True)
