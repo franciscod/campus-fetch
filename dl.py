@@ -26,6 +26,9 @@ HASH_BUF_SIZE = 65536
 OLD_BASE_DIR = '.old'
 DOWNLOADS_DIR = 'downloads'
 
+def log(*args):
+    print(*args, file=sys.stderr)
+
 class MoodleDL:
     def __init__(self, base_url='https://campus.exactas.uba.ar/'):
         self._session = HTMLSession()
@@ -96,6 +99,7 @@ class MoodleDL:
             return
 
         self._processed_urls.add(url)
+        log("download_file", url)
 
         if name is None:
             # ???
@@ -196,6 +200,8 @@ class MoodleDL:
             return
         self._processed_urls.add(res.url)
 
+        log("recurse_in_tabs", res.url)
+
         for a in res.html.find('.nav-tabs li a'):
             href = a.attrs.get('href')
             if href and href not in self._processed_urls:
@@ -236,6 +242,7 @@ class MoodleDL:
 
 
     def parse_section(self, res):
+        log("parse_section", res.url)
         title = res.html.find('.breadcrumb li:last-child span a span', first=True).text
         content = self.parse_content(res, title)
 
@@ -320,6 +327,12 @@ class MoodleDL:
         self.parse_section(res)
 
     def fetch_resource(self, url, basedir):
+        key = ("res", url)
+        if key in self._processed_urls:
+            return
+        self._processed_urls.add(key)
+        log("fetch_resource", url)
+
         res = self.get(url)
 
 
@@ -366,6 +379,8 @@ class MoodleDL:
         url_id = int(url.split('/mod/url/view.php?id=')[-1])
 
         self._processed_urls.add(url)
+
+        log("fetch_shortened_url", url)
 
         hres = self.head(url)
         loc = hres.headers.get('Location')
