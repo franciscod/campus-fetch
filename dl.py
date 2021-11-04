@@ -92,6 +92,11 @@ class MoodleDL:
         return True
 
     def download_file(self, url, name, basedir):
+        if url in self._processed_urls:
+            return
+
+        self._processed_urls.add(url)
+
         if name is None:
             # ???
             pass
