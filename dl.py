@@ -275,7 +275,7 @@ class MoodleDL:
         for a in content.find('a'):
             href = a.attrs.get('href')
 
-            if "mod_folder" not in href:
+            if href is None or "mod_folder" not in href:
                 continue
 
             dl_url = href
