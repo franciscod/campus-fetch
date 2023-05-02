@@ -234,7 +234,7 @@ class MoodleDL:
             md_content += md_extra_content
 
         if md_content.strip() != '':
-            with open(self.path(slugify(title) + '.md'), 'w') as f:
+            with open(self.path(slugify(title) + '.md'), 'w', encoding='utf-8') as f:
                 f.write('# ' + title + '\n([fuente](' + res.url + '))\n---\n')
                 f.write(md_content)
 
