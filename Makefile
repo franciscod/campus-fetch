@@ -2,7 +2,7 @@ download: venv/done
 	venv/bin/python3 dl.py
 	cd downloads; git add .; git commit -m "download"
 
-venv: requirements.txt
+venv/done: requirements.txt
 	python3 -m venv venv
 	venv/bin/pip install -r requirements.txt
 	touch venv/done
