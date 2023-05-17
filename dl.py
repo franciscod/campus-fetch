@@ -14,10 +14,10 @@ from requests_html import HTMLSession
 from config import MATERIAS
 
 try:
-    from config import DNI, PASSWORD
+    from secret import DNI, PASSWORD
 except:
-    print("Asegurate de que el archivo config.py tenga "
-          "definidas las variables DNI y PASSWORD!")
+    print("el archivo secret.py debería tener la definicion de DNI y PASSWORD", file=sys.stderr)
+    print("(ver el archivo secret.example.py)", file=sys.stderr)
     sys.exit(1)
 
 from util import slugify

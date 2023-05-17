@@ -2,3 +2,5 @@ venv/
 .old/
 __pycache__/
 downloads/
+
+secret.py
