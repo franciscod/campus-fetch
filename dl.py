@@ -256,7 +256,7 @@ class MoodleDL:
             if '/mod/resource' in href:
                 self.fetch_resource(href, slugify(title))
             elif '/mod/forum' in href:
-                pass  # ignoring forum
+                self.fetch_forum(href)
             elif '/mod/url' in href:
                 self.fetch_shortened_url(href, a.text)
             elif '/mod/page' in href:
@@ -297,6 +297,47 @@ class MoodleDL:
         content = self.parse_content(res, title)
 
         self.parse_page_fp_filename(content, basedir)
+
+
+    def fetch_forum(self, url):
+        if url in self._processed_urls:
+            return
+        self._processed_urls.add(url)
+        log("fetch_forum", url)
+
+        res = self.get(url)
+        for tr in res.html.find('tr.discussion'):
+            a = tr.find('.topic a', first=True)
+            if a:
+                href = a.attrs['href']
+                self.fetch_discuss(href)
+
+
+    def fetch_discuss(self, url):
+        if url in self._processed_urls:
+            return
+        self._processed_urls.add(url)
+        log("fetch_discuss", url)
+
+        out = ""
+
+        res = self.get(url)
+        for post in res.html.find('.forumpost'):
+            h = HTML2Text(baseurl='')
+            h.ul_item_mark = '-'
+            md_post = h.handle(post.html)
+            out += md_post + '\n\n'
+
+        forum = res.html.find('h2', first=True).text
+        title = res.html.find('h3.discussionname', first=True).text
+
+        desired_path = f'discuss/{slugify(forum)}/'
+        name = f'{slugify(title)}.md'
+        ensured_path = self.path(name, desired_path)
+
+        with open(ensured_path, 'w', encoding='utf-8') as f:
+            f.write('# ' + title + '\n([fuente](' + res.url + '))\n---\n')
+            f.write(out)
 
 
     def fetch_page_resource(self, url):
