@@ -1,4 +1,4 @@
-download: venv/done
+download: venv/done downloads
 	venv/bin/python3 dl.py
 	cd downloads; git add .; git commit -m "download"
 
@@ -8,7 +8,11 @@ venv/done: requirements.txt
 	touch venv/done
 
 downloads:
-	mkdir downloads; cd downloads; git init && git commit -m 'initial commit' --allow-empty
+	mkdir downloads; cd downloads; \
+        git init && \
+        echo '.old/' > .gitignore && \
+        git add .gitignore && \
+        git commit -m 'initial commit' --allow-empty
 
 clean:
 	rm -rf downloads
