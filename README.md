@@ -17,10 +17,10 @@
 
 3) Una vez que obtuvieron los ids y nombres de las materias deben agregarlos a la lista `MATERIAS` del archivo `config.py` con el mismo formato que el ejemplo. 
 
-4) Por último sólo queda pararse sobre el directorio "/campus_fetch" (probar usando WSL en caso de Windows) y correr:
+4) Por último sólo queda pararse sobre el directorio donde clonaron el repo y correr (probar usando WSL en caso de Windows):
 
         make
 
-5) Luego de correr el script se van a descargar todos los archivos de las materias que agregaron al *config.py* en una carpeta "downloads".
+5) Luego de correr el script se van a descargar todos los archivos de las materias que agregaron al `config.py` en una carpeta `/downloads`.
 
 6) (opcional) Comenzar a preparar el final que venís colgando :)
