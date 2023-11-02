@@ -99,7 +99,7 @@ class MoodleDL:
             return
 
         self._processed_urls.add(url)
-        log("download_file", url)
+        log("download_file", url, name)
 
         if name is None:
             # ???
@@ -384,6 +384,11 @@ class MoodleDL:
                     filename = content_disp[17:]
                     if filename[0] == filename[-1] == '"':
                         filename = filename[1:-1]
+
+                    # TODO: grab this from somewhere else -- meta in html, headers, etc
+                    IMPLICIT_ENCODING = 'latin1'
+
+                    filename = bytes(filename, IMPLICIT_ENCODING).decode() 
                     return url, filename
 
             # try 'regular' moodle resource download page
@@ -445,6 +450,13 @@ class MoodleDL:
 if __name__ == '__main__':
     dl = MoodleDL()
     dl.login(username=DNI, password=PASSWORD)
+
+    if 'oneshot' in sys.argv:
+        resource_url = sys.argv[1+sys.argv.index('oneshot')]
+        dl._course_id = 9999
+        dl._course_name = "oneshot"
+        dl.fetch_resource(resource_url, "oneshot_resource")
+        exit(0)
 
     for args in MATERIAS:
         dl.fetch_course(*args)

@@ -4,5 +4,5 @@ https://campus.exactas.uba.ar/course/view.php?id=2420
 """
 
 MATERIAS = [
-  ("23c1-softcores", 3753),
+  ("23c2-compiladores", 3898),
 ]
