@@ -1,14 +1,17 @@
-PY_SYS = python3
+# comment this to use default python/pip
+USE_VENV=1
 
-# With venv
-PIP    = venv/bin/pip
-PY     = venv/bin/python3
+ifdef USE_VENV
+PIP = venv/bin/pip
+PY  = venv/bin/python3
 VENV_TARGET = venv/done
+else
+PIP = pip
+PY  = python3
+VENV_TARGET = 
+endif
 
-# Without venv
-# PIP    = pip
-# PY     = python3
-# VENV_TARGET = 
+PY_SYS = python3
 
 download: $(VENV_TARGET) downloads
 	$(PY) dl.py
