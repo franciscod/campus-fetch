@@ -1,13 +1,25 @@
-download: venv/done downloads
-	venv/bin/python3 dl.py
+PY_SYS = python3
+
+# With venv
+PIP    = venv/bin/pip
+PY     = venv/bin/python3
+VENV_TARGET = venv/done
+
+# Without venv
+# PIP    = pip
+# PY     = python3
+# VENV_TARGET = 
+
+download: $(VENV_TARGET) downloads
+	$(PY) dl.py
 	cd downloads; git add .; git commit -m "download"
 
 oneshot:
-	venv/bin/python3 dl.py oneshot https://campus.exactas.uba.ar/mod/resource/view.php?id=350539
+	$(PY) dl.py oneshot https://campus.exactas.uba.ar/mod/resource/view.php?id=350539
 
 venv/done: requirements.txt
-	python3 -m venv venv
-	venv/bin/pip install -r requirements.txt
+	$(PY_SYS) -m venv venv
+	$(PIP) install -r requirements.txt
 	touch venv/done
 
 downloads:
