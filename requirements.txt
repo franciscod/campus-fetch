@@ -1,3 +1,4 @@
+beautifulsoup4
 html2text
-requests_html
+requests
 unidecode

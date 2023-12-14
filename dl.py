@@ -9,7 +9,8 @@ import urllib.parse
 from pathlib import Path
 
 from html2text import HTML2Text
-from requests_html import HTMLSession
+from requests import Session
+from bs4 import BeautifulSoup
 
 from config import MATERIAS
 
@@ -31,7 +32,7 @@ def log(*args):
 
 class MoodleDL:
     def __init__(self, base_url='https://campus.exactas.uba.ar/'):
-        self._session = HTMLSession()
+        self._session = Session()
         self._base_url = base_url
         self._processed_urls = set()
 
@@ -52,6 +53,16 @@ class MoodleDL:
             url = self._base_url + url
 
         return self._session.post(url, *args, **kwargs)
+
+    def css_find(self, res, selector):
+        soup = BeautifulSoup(res.text, "html.parser")
+        return soup.css.select(selector)
+
+    def css_find1(self, res, selector):
+        tags = self.css_find(res, selector)
+        if tags[:1]:
+            return tags[0]
+        return None
 
     def normalize_etag(self, etag):
         if etag.startswith('W/"') and etag.endswith('"'):
@@ -143,7 +154,7 @@ class MoodleDL:
 
     def agree_policy(self, res):
         return self.post('user/policy.php', data={
-            'sesskey': res.html.find('#region-main form input[name=sesskey]', first=True).attrs['value'],
+            'sesskey': self.css_find1(res, '#region-main form input[name=sesskey]').attrs['value'],
             'agree': '1'
         })
 
@@ -162,7 +173,7 @@ class MoodleDL:
         self.parse_course(res)
 
     def parse_course(self, res):
-        topics = res.html.find('ul.topics > li.section')
+        topics = self.css_find(res, 'ul.topics > li.section')
         if len(topics) == 1:
             self.recurse_in_tabs(res)
         else:
@@ -202,24 +213,24 @@ class MoodleDL:
 
         log("recurse_in_tabs", res.url)
 
-        for a in res.html.find('.nav-tabs li a'):
+        for a in self.css_find(res, '.nav-tabs li a'):
             href = a.attrs.get('href')
             if href and href not in self._processed_urls:
                 self._processed_urls.add(res.url)
                 newres = self._session.get(href)
                 self.recurse_in_tabs(newres)
 
-        if res.html.find('.errormessage'):
+        if self.css_find(res, '.errormessage'):
             return
         self.parse_section(res)
 
     def parse_content(self, res, title):
-        content = res.html.find('#region-main .content', first=True)
+        content = self.css_find1(res, '#region-main .content')
         if content is None:
-            content = res.html.find('#region-main [role="main"]', first=True)
+            content = self.css_find1(res, '#region-main[role="main"]')
 
         extra = []
-        for iframe in content.find('iframe'):
+        for iframe in content.find_all('iframe'):
             src = iframe.attrs.get('src')
             if not src:
                 continue
@@ -227,7 +238,7 @@ class MoodleDL:
 
         h = HTML2Text(baseurl='')
         h.ul_item_mark = '-'
-        md_content = h.handle(content.html)
+        md_content = h.handle(str(content))
 
         if extra:
             md_extra_content = '\n\n'.join(extra)
@@ -243,10 +254,10 @@ class MoodleDL:
 
     def parse_section(self, res):
         log("parse_section", res.url)
-        title = res.html.find('.breadcrumb li:last-child span a span', first=True).text
+        title = self.css_find1(res, '.breadcrumb li:last-child span a span').text
         content = self.parse_content(res, title)
 
-        for a in content.find('a'):
+        for a in content.find_all('a'):
             href = a.attrs.get('href')
             if not href:
                 continue
@@ -272,7 +283,7 @@ class MoodleDL:
 
 
     def parse_page_fp_filename(self, content, basedir):
-        for a in content.find('a'):
+        for a in content.find_all('a'):
             href = a.attrs.get('href')
 
             if href is None or "mod_folder" not in href:
@@ -291,7 +302,7 @@ class MoodleDL:
         self._processed_urls.add(url)
 
         res = self.get(url)
-        title = res.html.find('.breadcrumb li:last-child span a span', first=True).text
+        title = self.css_find1(res, '.breadcrumb li:last-child span a span').text
         basedir += "/" + slugify(title)
 
         content = self.parse_content(res, title)
@@ -306,8 +317,8 @@ class MoodleDL:
         log("fetch_forum", url)
 
         res = self.get(url)
-        for tr in res.html.find('tr.discussion'):
-            a = tr.find('.topic a', first=True)
+        for tr in self.css_find(res, 'tr.discussion'):
+            a = tr.find1('.topic a')
             if a:
                 href = a.attrs['href']
                 self.fetch_discuss(href)
@@ -322,14 +333,14 @@ class MoodleDL:
         out = ""
 
         res = self.get(url)
-        for post in res.html.find('.forumpost'):
+        for post in self.css_find(res, '.forumpost'):
             h = HTML2Text(baseurl='')
             h.ul_item_mark = '-'
             md_post = h.handle(post.html)
             out += md_post + '\n\n'
 
-        forum = res.html.find('h2', first=True).text
-        title = res.html.find('h3.discussionname', first=True).text
+        forum = self.css_find1(res, 'h2').text
+        title = self.css_find1(res, 'h3.discussionname').text
 
         desired_path = f'discuss/{slugify(forum)}/'
         name = f'{slugify(title)}.md'
@@ -351,7 +362,7 @@ class MoodleDL:
 
 
     def parse_page_resource(self, res):
-        title = res.html.find('.breadcrumb li:last-child span a span', first=True).text
+        title = self.css_find1(res, '.breadcrumb li:last-child span a span').text
         content = self.parse_content(res, title)
 
     def fetch_section(self, url):
@@ -392,14 +403,14 @@ class MoodleDL:
                     return url, filename
 
             # try 'regular' moodle resource download page
-            a = res.html.find('object a', first=True)
+            a = self.css_find1(res, 'object a')
             if a:
                 dl_url = href = a.attrs['href']
                 dl_name = href.split('/')[-1]
                 return dl_url, dl_name
 
             # try resourceimage page
-            img = res.html.find('img.resourceimage', first=True)
+            img = self.css_find1(res, 'img.resourceimage')
             if img:
                 dl_url = href = img.attrs['src']
                 dl_name = href.split('/')[-1]
@@ -436,9 +447,9 @@ class MoodleDL:
             res = self.get(url)
             dest = res.url
 
-            workaround = res.html.find('.urlworkaround', first=True)
+            workaround = self.css_find1(res, '.urlworkaround')
             if workaround:
-                dest = workaround.find("a", first=True).attrs['href']
+                dest = workaround.find1("a").attrs['href']
 
         path = (self.base_path() / "urls" / str(url_id))
         path.parent.mkdir(parents=True, exist_ok=True)
