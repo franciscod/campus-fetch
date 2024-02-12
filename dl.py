@@ -227,7 +227,7 @@ class MoodleDL:
     def parse_content(self, res, title):
         content = self.css_find1(res, '#region-main .content')
         if content is None:
-            content = self.css_find1(res, '#region-main[role="main"]')
+            content = self.css_find1(res, '#region-main [role="main"]')
 
         extra = []
         for iframe in content.find_all('iframe'):
@@ -462,11 +462,18 @@ if __name__ == '__main__':
     dl = MoodleDL()
     dl.login(username=DNI, password=PASSWORD)
 
-    if 'oneshot' in sys.argv:
-        resource_url = sys.argv[1+sys.argv.index('oneshot')]
+    if 'section' in sys.argv:
+        url = sys.argv[1+sys.argv.index('section')]
         dl._course_id = 9999
         dl._course_name = "oneshot"
-        dl.fetch_resource(resource_url, "oneshot_resource")
+        dl.fetch_section(url)
+        exit(0)
+
+    if 'resource' in sys.argv:
+        url = sys.argv[1+sys.argv.index('resource')]
+        dl._course_id = 9999
+        dl._course_name = "oneshot"
+        dl.fetch_resource(url, "oneshot_resource")
         exit(0)
 
     for args in MATERIAS:
