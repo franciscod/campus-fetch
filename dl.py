@@ -229,8 +229,11 @@ class MoodleDL:
         if content is None:
             content = self.css_find1(res, '#region-main [role="main"]')
 
+        if content is None:
+            content = self.css_find1(res, '#region-main [role="main"]')
+
         extra = []
-        for iframe in content.find_all('iframe'):
+        for iframe in self.css_find(content, 'iframe'):
             src = iframe.attrs.get('src')
             if not src:
                 continue
@@ -317,8 +320,8 @@ class MoodleDL:
         log("fetch_forum", url)
 
         res = self.get(url)
-        for tr in self.css_find(res, 'tr.discussion'):
-            a = tr.find1('.topic a')
+        for tr in self.css_find(res, '.discussion'):
+            a = self.css_find1(tr, '.topic a')
             if a:
                 href = a.attrs['href']
                 self.fetch_discuss(href)

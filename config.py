@@ -4,5 +4,5 @@ https://campus.exactas.uba.ar/course/view.php?id=2420
 """
 
 MATERIAS = [
-  ("BD-2022-C2", 3282),
+    ('24c1-isw2', 4164),
 ]
