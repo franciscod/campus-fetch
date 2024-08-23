@@ -39,4 +39,7 @@ clean:
 todo:
 	grep -n -R TODO *.py || true
 
+pudb:
+	$(PY) -m pudb dl.py
+
 .PHONY: download clean todo

@@ -7,5 +7,6 @@ in
       pkgs.python3Packages.beautifulsoup4
       pkgs.python3Packages.requests
       pkgs.python3Packages.unidecode
+      pkgs.python3Packages.pudb
     ];
   }

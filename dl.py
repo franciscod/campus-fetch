@@ -227,19 +227,42 @@ class MoodleDL:
         self.parse_section(res)
 
     def parse_content(self, res, title):
-        content = self.css_find1(res, '#region-main .content')
-        if content is None:
-            content = self.css_find1(res, '#region-main [role="main"]')
+        contents = self.css_find(res, '#region-main .content')
+        if contents is None:
+            contents = self.css_find(res, '#region-main [role="main"]')
 
-        if content is None:
-            content = self.css_find1(res, '#region-main [role="main"]')
+        if contents is None:
+            contents = self.css_find(res, '#region-main [role="main"]')
+
+        content = None
+        if len(contents) == 0:
+            print("empty content", file=sys.stderr)
+        elif len(contents) == 1:
+            content = contents[0]
+        else:
+            # hay muchos sections, pero normalmente hay uno solo..
+
+            # HACK para proba
+            img = contents[0].find('img')
+            if img:
+                src = img.get('src')
+                if src == 'https://campus.exactas.uba.ar/pluginfile.php/581414/course/section/66736/fondo.png':
+                    # wtf, proba tiene un section adicional para poner un logo en todas las paginas
+                    # vamos al segundo section
+                    content = contents[1]
+
+            if content == None:
+                raise NotImplementedError
+                # ahora que lo pienso, capaz se pueden parsear
+                # todos los sections y concatenarlos?
 
         extra = []
-        for iframe in self.css_find(content, 'iframe'):
-            src = iframe.attrs.get('src')
-            if not src:
-                continue
-            extra.append("- iframe: URL=" + src)
+        if content:
+            for iframe in self.css_find(content, 'iframe'):
+                src = iframe.attrs.get('src')
+                if not src:
+                    continue
+                extra.append("- iframe: URL=" + src)
 
         h = HTML2Text(baseurl='')
         h.ul_item_mark = '-'
@@ -288,6 +311,9 @@ class MoodleDL:
 
 
     def parse_page_fp_filename(self, content, basedir):
+        if content is None:
+            return
+
         for a in content.find_all('a'):
             href = a.attrs.get('href')
 
@@ -454,7 +480,7 @@ class MoodleDL:
 
             workaround = self.css_find1(res, '.urlworkaround')
             if workaround:
-                dest = workaround.find1("a").attrs['href']
+                dest = workaround.find("a").attrs['href']
 
         path = (self.base_path() / "urls" / str(url_id))
         path.parent.mkdir(parents=True, exist_ok=True)
