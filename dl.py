@@ -173,11 +173,13 @@ class MoodleDL:
         self.parse_course(res)
 
     def parse_course(self, res):
-        topics = self.css_find(res, 'ul.topics > li.section')
-        if len(topics) == 1:
-            self.recurse_in_tabs(res)
-        else:
-            raise NotImplementedError
+        sections = self.css_find(res, 'ul.topics > li.section')
+        self.recurse_in_tabs(res)
+        # if len(sections) == 1:
+        #     pass
+        # else:
+        #     print(f"huh, en lugar de 1 section hay {len(sections)=}")
+        #     raise NotImplementedError
 
     def base_path(self):
         return Path(DOWNLOADS_DIR) / slugify(self._course_name)
@@ -480,4 +482,5 @@ if __name__ == '__main__':
         exit(0)
 
     for args in MATERIAS:
+        print("fetching", args)
         dl.fetch_course(*args)
