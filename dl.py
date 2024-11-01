@@ -305,6 +305,8 @@ class MoodleDL:
                 self.fetch_page_resource(href)
             elif '/mod/folder' in href:
                 self.fetch_folder(href, slugify(title))
+            elif 'pluginfile.php/' in href:
+                self.fetch_pluginfile(href, slugify(title))
             elif href.startswith(section_prefix):
                 self.fetch_section(href)
             else:
@@ -411,6 +413,16 @@ class MoodleDL:
         res = self.get(url)
 
         self.parse_section(res)
+
+
+    def fetch_pluginfile(self, url, basedir):
+        key = ("res", url)
+        if key in self._processed_urls:
+            return
+        self._processed_urls.add(key)
+        log("fetch_pluginfile", url, basedir)
+
+        self.download_file(url, url.split('/')[-1], basedir)
 
     def fetch_resource(self, url, basedir):
         key = ("res", url)
