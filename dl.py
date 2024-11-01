@@ -17,8 +17,8 @@ from config import MATERIAS
 try:
     from secret import DNI, PASSWORD
 except:
-    print("el archivo secret.py debería tener la definicion de DNI y PASSWORD", file=sys.stderr)
-    print("(ver el archivo secret.example.py)", file=sys.stderr)
+    log("el archivo secret.py debería tener la definicion de DNI y PASSWORD")
+    log("(ver el archivo secret.example.py)")
     sys.exit(1)
 
 from util import slugify
@@ -27,8 +27,11 @@ HASH_BUF_SIZE = 65536
 OLD_BASE_DIR = '.old'
 DOWNLOADS_DIR = 'downloads'
 
-def log(*args):
-    print(*args, file=sys.stderr)
+def log(*args, **kwargs):
+    print(*args, 
+          **kwargs,
+          # file=sys.stderr,
+          )
 
 class MoodleDL:
     def __init__(self, base_url='https://campus.exactas.uba.ar/'):
@@ -236,7 +239,7 @@ class MoodleDL:
 
         content = None
         if len(contents) == 0:
-            print("empty content", file=sys.stderr)
+            log("empty content")
         elif len(contents) == 1:
             content = contents[0]
         else:
@@ -305,7 +308,7 @@ class MoodleDL:
             elif href.startswith(section_prefix):
                 self.fetch_section(href)
             else:
-                print("unhandled resource", href, title, file=sys.stderr)
+                log("unhandled resource", href, title)
 
         self.parse_page_fp_filename(content, slugify(title))
 
