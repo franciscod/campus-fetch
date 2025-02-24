@@ -18,8 +18,8 @@ download: $(VENV_TARGET) downloads
 	cd downloads; git add .; git commit -m "download"
 
 oneshot:
-	$(PY) dl.py section 'https://campus.exactas.uba.ar/course/view.php?id=3282&section=3'
-	# $(PY) dl.py resource 'https://campus.exactas.uba.ar/mod/resource/view.php?id=350539'
+	$(PY) dl.py section 'https://campus12-24.exactas.uba.ar/course/view.php?id=3282&section=3'
+	# $(PY) dl.py resource 'https://campus12-24.exactas.uba.ar/mod/resource/view.php?id=350539'
 
 venv/done: requirements.txt
 	$(PY_SYS) -m venv venv

@@ -1,5 +1,5 @@
 """
-https://campus.exactas.uba.ar/course/view.php?id=2420
+https://campus12-24.exactas.uba.ar/course/view.php?id=2420
 [(nombre, id en el campus)]
 """
 

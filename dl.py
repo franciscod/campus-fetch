@@ -34,7 +34,7 @@ def log(*args, **kwargs):
           )
 
 class MoodleDL:
-    def __init__(self, base_url='https://campus.exactas.uba.ar/'):
+    def __init__(self, base_url='https://campus12-24.exactas.uba.ar/'):
         self._session = Session()
         self._base_url = base_url
         self._processed_urls = set()
@@ -249,7 +249,7 @@ class MoodleDL:
             img = contents[0].find('img')
             if img:
                 src = img.get('src')
-                if src == 'https://campus.exactas.uba.ar/pluginfile.php/581414/course/section/66736/fondo.png':
+                if src == 'https://campus12-24.exactas.uba.ar/pluginfile.php/581414/course/section/66736/fondo.png':
                     # wtf, proba tiene un section adicional para poner un logo en todas las paginas
                     # vamos al segundo section
                     content = contents[1]
@@ -293,7 +293,7 @@ class MoodleDL:
             if not href:
                 continue
 
-            section_prefix = "https://campus.exactas.uba.ar/course/view.php?id={}&section=".format(self._course_id)
+            section_prefix = "https://campus12-24.exactas.uba.ar/course/view.php?id={}&section=".format(self._course_id)
 
             if '/mod/resource' in href:
                 self.fetch_resource(href, slugify(title))
