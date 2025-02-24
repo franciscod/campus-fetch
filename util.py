@@ -14,3 +14,10 @@ def slugify(text, delim=u'-'):
             result.append(word)
 
     return delim.join(result)
+
+def log(*args, **kwargs):
+    print(*args, 
+          **kwargs,
+          # file=sys.stderr,
+          )
+

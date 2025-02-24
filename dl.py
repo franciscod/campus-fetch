@@ -14,6 +14,9 @@ from bs4 import BeautifulSoup
 
 from config import MATERIAS
 
+from util import slugify
+from util import log
+
 try:
     from secret import DNI, PASSWORD
 except:
@@ -21,17 +24,10 @@ except:
     log("(ver el archivo secret.example.py)")
     sys.exit(1)
 
-from util import slugify
 
 HASH_BUF_SIZE = 65536
 OLD_BASE_DIR = '.old'
 DOWNLOADS_DIR = 'downloads'
-
-def log(*args, **kwargs):
-    print(*args, 
-          **kwargs,
-          # file=sys.stderr,
-          )
 
 class MoodleDL:
     def __init__(self, base_url='https://campus12-24.exactas.uba.ar/'):
