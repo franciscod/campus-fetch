@@ -14,6 +14,9 @@ from bs4 import BeautifulSoup
 
 from config import MATERIAS
 
+from util import slugify
+from util import log
+
 try:
     from secret import DNI, PASSWORD
 except:
@@ -21,20 +24,13 @@ except:
     log("(ver el archivo secret.example.py)")
     sys.exit(1)
 
-from util import slugify
 
 HASH_BUF_SIZE = 65536
 OLD_BASE_DIR = '.old'
 DOWNLOADS_DIR = 'downloads'
 
-def log(*args, **kwargs):
-    print(*args, 
-          **kwargs,
-          # file=sys.stderr,
-          )
-
 class MoodleDL:
-    def __init__(self, base_url='https://campus.exactas.uba.ar/'):
+    def __init__(self, base_url='https://campus12-24.exactas.uba.ar/'):
         self._session = Session()
         self._base_url = base_url
         self._processed_urls = set()
@@ -249,7 +245,7 @@ class MoodleDL:
             img = contents[0].find('img')
             if img:
                 src = img.get('src')
-                if src == 'https://campus.exactas.uba.ar/pluginfile.php/581414/course/section/66736/fondo.png':
+                if src == 'https://campus12-24.exactas.uba.ar/pluginfile.php/581414/course/section/66736/fondo.png':
                     # wtf, proba tiene un section adicional para poner un logo en todas las paginas
                     # vamos al segundo section
                     content = contents[1]
@@ -293,7 +289,7 @@ class MoodleDL:
             if not href:
                 continue
 
-            section_prefix = "https://campus.exactas.uba.ar/course/view.php?id={}&section=".format(self._course_id)
+            section_prefix = "https://campus12-24.exactas.uba.ar/course/view.php?id={}&section=".format(self._course_id)
 
             if '/mod/resource' in href:
                 self.fetch_resource(href, slugify(title))
