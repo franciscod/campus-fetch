@@ -4,10 +4,17 @@ https://campus12-24.exactas.uba.ar/course/view.php?id=2420
 """
 
 MATERIAS = [
-    ('24c2-proba', 4677),
-    ('24c2-tcc',   4703),
-    ('24c2-therr', 4742),
-    # ('24c1-isw2', 4164),
-    # ('24c1-dl', 4191),
-    # ('24c1-cripmod', 4192),
+    ('2c24-so', 4696),
+]
+
+"""
+Sección para configurar fetch del campus nuevo
+CAMPUS_IDS = [(id_1), (id_2), (id_3), ...]
+"""
+
+HTML_PARSER = 'html.parser'
+BASE_OUTPUT_DIR = "downloads_test"
+
+CAMPUS_IDS = [
+    234
 ]

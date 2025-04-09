@@ -1,6 +1,6 @@
 import sys
 
-from util import css_find, css_find1
+from util import css_find1
 
 try:
     from secret import IDEX, IDEX_PASSWORD
