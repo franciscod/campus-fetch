@@ -13,7 +13,8 @@ CAMPUS_IDS = [(id_1), (id_2), (id_3), ...]
 """
 
 HTML_PARSER = 'html.parser'
-BASE_OUTPUT_DIR = "downloads_test"
+BASE_OUTPUT_DIR = "downloads"
+MOODLE_RESOURCE_PATHS = ('/mod/resource/view.php', '/pluginfile.php/')
 
 CAMPUS_IDS = [
     234

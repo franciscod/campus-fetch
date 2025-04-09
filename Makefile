@@ -8,12 +8,16 @@ VENV_TARGET = venv/done
 else
 PIP = pip
 PY  = python3
-VENV_TARGET = 
+VENV_TARGET =
 endif
 
 PY_SYS = python3
 
-download: $(VENV_TARGET) downloads
+nuevo: $(VENV_TARGET) downloads
+	$(PY) campus25.py
+	cd downloads; git add .; git commit -m "download"
+
+viejo: $(VENV_TARGET) downloads
 	$(PY) dl.py
 	cd downloads; git add .; git commit -m "download"
 
