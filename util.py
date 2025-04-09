@@ -1,4 +1,5 @@
 import re
+from bs4 import BeautifulSoup
 from unicodedata import normalize
 
 import unidecode
@@ -15,9 +16,21 @@ def slugify(text, delim=u'-'):
 
     return delim.join(result)
 
+
 def log(*args, **kwargs):
     print(*args, 
           **kwargs,
           # file=sys.stderr,
           )
 
+
+def css_find(res, selector):
+    soup = BeautifulSoup(res.text, "html.parser")
+    return soup.css.select(selector)
+
+
+def css_find1(res, selector):
+    tags = css_find(res, selector)
+    if tags[:1]:
+        return tags[0]
+    return None

@@ -1,6 +1,6 @@
 import sys
 
-from bs4 import BeautifulSoup
+from util import css_find, css_find1
 
 try:
     from secret import IDEX, IDEX_PASSWORD
@@ -10,19 +10,7 @@ except:
     sys.exit(1)
 
 
-def css_find(res, selector):
-    soup = BeautifulSoup(res.text, "html.parser")
-    return soup.css.select(selector)
-
-
-def css_find1(res, selector):
-    tags = css_find(res, selector)
-    if tags[:1]:
-        return tags[0]
-    return None
-
-
-def idex_login(session):
+def login(session):
     url = "https://campus.exactas.uba.ar/login/index.php"
     res = session.get(url)
 
@@ -44,4 +32,4 @@ def idex_login(session):
 if __name__ == "__main__":
     from requests import Session
     sess = Session()
-    print(idex_login(sess).text)
+    print(login(sess).text)
