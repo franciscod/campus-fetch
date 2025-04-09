@@ -73,7 +73,7 @@ class MoodleDL:
     def etag_sha1_matches(self, url, filename):
         # assumes ETag is the SHA1 of the file
         res = self.head(url, allow_redirects=True)
-        etag = res.headers.get('ETag')
+        etag = self.normalize_etag(res.headers.get('ETag'))
 
         if not etag:
             for r in res.history:
@@ -84,7 +84,6 @@ class MoodleDL:
                 print('No ETag on headers', filename, url)
                 return False
 
-        etag = self.normalize_etag(etag)
         if not Path(filename).exists():
             print('File not previously downloaded', filename, url)
             return False
