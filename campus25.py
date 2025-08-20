@@ -85,6 +85,19 @@ if __name__ == "__main__":
     os.makedirs(BASE_OUTPUT_DIR, exist_ok=True)
     print(f"Saving course data under base directory: '{BASE_OUTPUT_DIR}'")
 
+    enrolled_ids = set()
+    for i, course in enumerate(courses):
+        enrolled_ids.add(course['id'])
+
+    for cfg_id in CAMPUS_IDS:
+        if cfg_id not in enrolled_ids:
+            print(f"Adding not enrolled but configured course (ID: {cfg_id})")
+            courses.append(dict(
+                id=cfg_id,
+                shortname=f"curso {cfg_id}",
+                viewurl=f"https://campus.exactas.uba.ar/course/view.php?id={cfg_id}",
+            ))
+
     print("\n--- Processing Courses ---")
     for i, course in enumerate(courses):
         course_id = course['id']

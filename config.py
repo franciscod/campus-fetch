@@ -17,5 +17,5 @@ BASE_OUTPUT_DIR = "downloads"
 MOODLE_RESOURCE_PATHS = ('/mod/resource/view.php', '/pluginfile.php/')
 
 CAMPUS_IDS = [
-    234
+    233 # redes 25c1
 ]
