@@ -68,6 +68,43 @@ def sanitize_filename(filename: str, default_name="downloaded_file") -> str:
     sanitized_base = slugify(base)
     return (sanitized_base or default_name) + ext
 
+def handle_folder_download(sess: Session, folder_url: str, base_dir: str, folder_name: str, processed_urls: set):
+    """Handles downloading all files within a Moodle folder."""
+    folder_slug = convert_name(folder_name, is_filename=False)
+    folder_path = os.path.join(base_dir, folder_slug)
+    os.makedirs(folder_path, exist_ok=True)
+    
+    print(f"        - Processing folder: '{folder_name}' -> '{os.path.relpath(folder_path, BASE_OUTPUT_DIR)}'")
+
+    try:
+        res = sess.get(folder_url)
+        res.raise_for_status()
+        soup = BeautifulSoup(res.text, HTML_PARSER)
+
+        # Finds? all file links within the folder view
+        file_links = soup.select('span.fp-filename a')
+
+        if not file_links:
+            print(f"          - No files found in folder '{folder_name}'.")
+            return
+
+        print(f"          - Found {len(file_links)} files in folder.")
+        for link in file_links:
+            file_url = link.get('href')
+            if not file_url or file_url.startswith('#'):
+                continue
+
+            absolute_file_url = urljoin(folder_url, file_url)
+            if absolute_file_url in processed_urls:
+                continue
+            
+            filename = sanitize_filename(link.get_text(strip=True))
+            download_file(sess, absolute_file_url, folder_path, filename)
+            processed_urls.add(absolute_file_url)
+
+    except Exception as e:
+        print(f"        - ERROR processing folder {folder_url}: {e}")
+
 if __name__ == "__main__":
     sess = Session()
     html_converter = HTML2Text(baseurl='')
@@ -100,27 +137,22 @@ if __name__ == "__main__":
 
     print("\n--- Processing Courses ---")
     for i, course in enumerate(courses):
-        course_id = course['id']
-        course_name = course['shortname']
-        course_url = course['viewurl']
+        course_id, course_name, course_url = course['id'], course['shortname'], course['viewurl']
 
         if CAMPUS_IDS and course_id not in CAMPUS_IDS:
             print(f"Skipping: {course_name} (ID: {course_id}) - Not in CAMPUS_IDS")
             continue
 
         print(f"\n[{i+1}/{len(courses)}] Processing Course: {course_name} (ID: {course_id})")
+        print(f"  - Course directory: '{os.path.relpath(course_output_path, BASE_OUTPUT_DIR)}'")
 
         course_dirname = convert_name(course_name, is_filename=False)
         course_output_path = os.path.join(BASE_OUTPUT_DIR, course_dirname)
         course_files_base_dir = os.path.join(course_output_path, "files")
         os.makedirs(course_output_path, exist_ok=True)
-
-        print(f"  - Course directory: '{os.path.relpath(course_output_path, BASE_OUTPUT_DIR)}'")
-
         main_course_page_res = sess.get(course_url)
         soup_main = BeautifulSoup(main_course_page_res.text, HTML_PARSER)
         html_converter.baseurl = course_url # Set base URL for relative link resolution
-
         tab_links = soup_main.select('ul.nav-tabs.format_onetopic-tabs li a')
         content_areas_to_process = [] # (title, soup_obj, base_url, section_slug, is_main_tab)
 
@@ -146,19 +178,18 @@ if __name__ == "__main__":
         processed_urls = set()
         for section_index, (title, soup, page_url, section_slug, is_main) in enumerate(content_areas_to_process):
 
-            content_selector = 'ul.onetopic' # todo add more
-            content_elements = soup.select(content_selector) or [soup] # Use whole soup as fallback
+            content_selector = 'ul.onetopic'
+            content_elements = soup.select(content_selector) or [soup]
 
             print(f"      - Processing section: '{title}' (Files -> '{section_slug}')")
             section_files_dir = os.path.join(course_files_base_dir, section_slug)
 
             md_parts = []
-            html_converter.baseurl = page_url # Set base for relative links in this section
+            html_converter.baseurl = page_url
             for element in content_elements:
-                # Avoid converting the whole soup if it was the fallback and has no specific content structure
                 is_fallback_soup = (len(content_elements) == 1 and element is soup)
-                if not is_fallback_soup or element.select(content_selector): # Check if fallback soup contains selected items
-                    if element.get_text(strip=True): # Only convert if there's text
+                if not is_fallback_soup or element.select(content_selector):
+                    if element.get_text(strip=True):
                          md_parts.append(html_converter.handle(str(element)))
 
             section_markdown = "\n\n---\n\n".join(md_parts) if md_parts else "*No significant text content found.*\n"
@@ -182,39 +213,41 @@ if __name__ == "__main__":
                 if absolute_url in processed_urls or absolute_url in unique_links: continue
 
                 parsed_url = urlparse(absolute_url)
-                path = parsed_url.path
-                filename_from_path = os.path.basename(path)
-                _, ext_from_path = os.path.splitext(filename_from_path)
-
                 is_moodle_resource_link = any(p in absolute_url for p in MOODLE_RESOURCE_PATHS)
                 is_forced_download = 'forcedownload=1' in parsed_url.query
 
                 if is_moodle_resource_link or is_forced_download:
                     unique_links[absolute_url] = link
 
-            print(f"        - Found {len(unique_links)} unique potential files.")
+            print(f"        - Found {len(unique_links)} unique potential files/folders.")
             for download_url, link in unique_links.items():
                  if download_url in processed_urls: continue
 
-                 link_text = link.get_text(strip=True)
-                 parsed_url = urlparse(download_url)
-                 filename_from_path = os.path.basename(parsed_url.path)
-                 _, ext_from_path = os.path.splitext(filename_from_path)
+                 # Check if the link is a folder and handle it accordingly
+                 if '/mod/folder/view.php' in download_url:
+                     folder_name = link.get_text(strip=True) or f"folder_{len(processed_urls)}"
+                     handle_folder_download(sess, download_url, section_files_dir, folder_name, processed_urls)
+                     processed_urls.add(download_url)
+                 else:
+                     # Original file download logic
+                     link_text = link.get_text(strip=True)
+                     parsed_url = urlparse(download_url)
+                     filename_from_path = os.path.basename(parsed_url.path)
+                     _, ext_from_path = os.path.splitext(filename_from_path)
 
-                 # Determine filename: path > link text > default
-                 if filename_from_path and filename_from_path != 'view.php' and '.' in filename_from_path:
-                      final_filename = sanitize_filename(filename_from_path)
-                 elif link_text:
-                      base_name = sanitize_filename(link_text, default_name=f"file_{len(processed_urls)}")
-                      if '.' not in os.path.splitext(base_name)[1]: # Add extension if missing
-                           guessed_ext = ext_from_path or mimetypes.guess_extension(link.get('type', '')) or '.file'
-                           final_filename = base_name + guessed_ext
-                      else:
-                           final_filename = base_name
-                 else: # Last resort filename
-                      final_filename = f"download_{len(processed_urls)}" + (ext_from_path or '.file')
+                     if filename_from_path and filename_from_path != 'view.php' and '.' in filename_from_path:
+                          final_filename = sanitize_filename(filename_from_path)
+                     elif link_text:
+                          base_name = sanitize_filename(link_text, default_name=f"file_{len(processed_urls)}")
+                          if '.' not in os.path.splitext(base_name)[1]:
+                               guessed_ext = ext_from_path or mimetypes.guess_extension(link.get('type', '')) or '.file'
+                               final_filename = base_name + guessed_ext
+                          else:
+                               final_filename = base_name
+                     else:
+                          final_filename = f"download_{len(processed_urls)}" + (ext_from_path or '.file')
 
-                 download_file(sess, download_url, section_files_dir, final_filename)
-                 processed_urls.add(download_url)
+                     download_file(sess, download_url, section_files_dir, final_filename)
+                     processed_urls.add(download_url)
 
-    print("\n--- Finished sucesfully ---")
+    print("\n--- Finished successfully ---")
