@@ -81,7 +81,7 @@ def handle_folder_download(sess: Session, folder_url: str, base_dir: str, folder
         res.raise_for_status()
         soup = BeautifulSoup(res.text, HTML_PARSER)
 
-        # Finds? all file links within the folder view
+        # Find all file links within the folder view
         file_links = soup.select('span.fp-filename a')
 
         if not file_links:
@@ -144,15 +144,18 @@ if __name__ == "__main__":
             continue
 
         print(f"\n[{i+1}/{len(courses)}] Processing Course: {course_name} (ID: {course_id})")
-        print(f"  - Course directory: '{os.path.relpath(course_output_path, BASE_OUTPUT_DIR)}'")
 
         course_dirname = convert_name(course_name, is_filename=False)
         course_output_path = os.path.join(BASE_OUTPUT_DIR, course_dirname)
         course_files_base_dir = os.path.join(course_output_path, "files")
         os.makedirs(course_output_path, exist_ok=True)
+
+        print(f"  - Course directory: '{os.path.relpath(course_output_path, BASE_OUTPUT_DIR)}'")
+
         main_course_page_res = sess.get(course_url)
         soup_main = BeautifulSoup(main_course_page_res.text, HTML_PARSER)
         html_converter.baseurl = course_url # Set base URL for relative link resolution
+
         tab_links = soup_main.select('ul.nav-tabs.format_onetopic-tabs li a')
         content_areas_to_process = [] # (title, soup_obj, base_url, section_slug, is_main_tab)
 
