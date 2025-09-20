@@ -15,11 +15,11 @@ PY_SYS = python3
 
 nuevo: $(VENV_TARGET) downloads
 	$(PY) campus25.py
-	cd downloads; git add .; git commit -m "download"
+	cd downloads; git add .; git diff --cached --quiet || git commit -m "download"
 
 viejo: $(VENV_TARGET) downloads
 	$(PY) dl.py
-	cd downloads; git add .; git commit -m "download"
+	cd downloads; git add .; git diff --cached --quiet || git commit -m "download"
 
 oneshot:
 	$(PY) dl.py section 'https://campus12-24.exactas.uba.ar/course/view.php?id=3282&section=3'
