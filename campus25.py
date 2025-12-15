@@ -139,7 +139,7 @@ if __name__ == "__main__":
     for i, course in enumerate(courses):
         course_id, course_name, course_url = course['id'], course['shortname'], course['viewurl']
 
-        if CAMPUS_IDS and course_id not in CAMPUS_IDS:
+        if course_id not in CAMPUS_IDS:
             print(f"Skipping: {course_name} (ID: {course_id}) - Not in CAMPUS_IDS")
             continue
 
